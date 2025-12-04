@@ -13,7 +13,7 @@ app = Flask(__name__)
 conn = psycopg2.connect(
     dbname="vaccweb",
     user="postgres",
-    password="20020429",
+    password="Paradox",
     host="localhost",
     port="5432"
 )
@@ -49,7 +49,8 @@ def ensure_db_columns():
             ALTER TABLE parent
             ADD COLUMN IF NOT EXISTS family_booklet_declared BOOLEAN DEFAULT FALSE,
             ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT NOW(),
-            ADD COLUMN IF NOT EXISTS created_by INT
+            ADD COLUMN IF NOT EXISTS created_by INT,
+            ADD COLUMN IF NOT EXISTS passport_number VARCHAR(255)
         """)
 
         # patient_vaccines: track who created and who confirmed
@@ -1007,6 +1008,7 @@ def add_user():
 @require_role("employee")
 def add_patient():
     nationalId = request.form.get("p-national-id")
+    passport = request.form.get("p-passport")
     # parent (guardian)
     fname = request.form.get("pt-fname")
     lname = request.form.get("pt-lname")
@@ -1039,11 +1041,16 @@ def add_patient():
 
     is_foreign = True if request.form.get('p-is-foreign') == 'on' or request.form.get('p-is-foreign') else False
 
-    # normalize nationalId
+    # normalize nationalId and passport
     if nationalId:
         nationalId = nationalId.strip()
         if nationalId == '':
             nationalId = None
+    
+    if passport:
+        passport = passport.strip()
+        if passport == '':
+            passport = None
 
     with conn.cursor() as cur:
 
@@ -1082,12 +1089,12 @@ def add_patient():
         #  3. إذا لم يكن الوالد موجود → نقوم بإنشاء حساب مستخدم جديد + سجل الوالد
         if parent_record is None:
 
-            # create password: use nationalId when present, otherwise generate a random password
+            # create password: use nationalId when present, otherwise use passport for foreign parents, otherwise generate a random password
             import uuid
-            raw_pw = nationalId if nationalId else uuid.uuid4().hex
+            raw_pw = nationalId if nationalId else (passport if passport else uuid.uuid4().hex)
             password = bcrypt.hashpw(raw_pw.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
 
-            # insert user
+            # insert user with username = first_name.last_name
             cur.execute(
                 "INSERT INTO users (username, password, role) VALUES (%s, %s, %s) RETURNING id",
                 ( (fname + "." + lname)[:60], password, "client")
@@ -1096,9 +1103,9 @@ def add_patient():
 
             # insert parent record; nationalId may be None for foreign parents
             cur.execute(
-                """INSERT INTO parent (national_id, address, phone, parent_id, child_id, family_booklet_declared)
-                VALUES (%s, %s, %s, %s, %s, %s) RETURNING id""",
-                (nationalId, address, phone, user_id, patient_id, family_booklet)
+                """INSERT INTO parent (national_id, passport_number, address, phone, parent_id, child_id, family_booklet_declared, created_by)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s) RETURNING id""",
+                (nationalId, passport, address, phone, user_id, patient_id, family_booklet, session.get('user_id'))
             )
             parent_record_id = cur.fetchone()[0]
         else:
