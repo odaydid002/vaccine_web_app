@@ -817,6 +817,83 @@ def download_certificate(child_id):
         # fallback: return HTML for printing or saving as PDF client-side
         return html
 
+
+# ----------------------------
+# صفحة الإحصائيات للموظف
+# ----------------------------
+@app.route('/stats')
+@require_role('employee')
+def stats_page():
+    # period: daily, weekly, yearly
+    period = request.args.get('period', 'weekly')
+    from datetime import date, timedelta
+    today = date.today()
+    if period == 'daily':
+        start = today
+    elif period == 'yearly':
+        start = today - timedelta(days=365)
+    else:
+        # weekly default (last 7 days)
+        start = today - timedelta(days=6)
+
+    end = today
+
+    with conn.cursor() as cur:
+        # basic totals
+        cur.execute("SELECT COUNT(*) FROM patients")
+        total_patients = cur.fetchone()[0] or 0
+
+        cur.execute("SELECT COUNT(*) FROM parent")
+        total_parents = cur.fetchone()[0] or 0
+
+        # vaccines given (done) in period grouped by vaccine name
+        cur.execute(
+            "SELECT v.name, COUNT(*) FROM patient_vaccines pv JOIN vaccines v ON v.id=pv.vaccine_id WHERE pv.status='done' AND pv.done_date BETWEEN %s AND %s GROUP BY v.name ORDER BY COUNT(*) DESC",
+            (start, end)
+        )
+        vaccines_done = cur.fetchall()
+
+        # distinct patients who received at least one vaccine in this period
+        cur.execute(
+            "SELECT COUNT(DISTINCT patient_id) FROM patient_vaccines WHERE status='done' AND done_date BETWEEN %s AND %s",
+            (start, end)
+        )
+        patients_vaccinated = cur.fetchone()[0] or 0
+
+        # pending scheduled in period
+        cur.execute(
+            "SELECT COUNT(*) FROM patient_vaccines WHERE status='pending' AND scheduled_date BETWEEN %s AND %s",
+            (start, end)
+        )
+        pending_in_period = cur.fetchone()[0] or 0
+
+        # late pending overall
+        cur.execute(
+            "SELECT COUNT(*) FROM patient_vaccines WHERE status='pending' AND scheduled_date < %s",
+            (today,)
+        )
+        late_total = cur.fetchone()[0] or 0
+
+        # vaccines by status overall
+        cur.execute("SELECT status, COUNT(*) FROM patient_vaccines GROUP BY status")
+        by_status = cur.fetchall()
+
+    # convert rows to friendly structures
+    vaccines_done_list = [{'name': r[0], 'count': r[1]} for r in vaccines_done]
+    by_status_dict = {r[0]: r[1] for r in by_status}
+
+    return render_template('stats.html',
+                           period=period,
+                           start=start,
+                           end=end,
+                           total_patients=total_patients,
+                           total_parents=total_parents,
+                           vaccines_done=vaccines_done_list,
+                           patients_vaccinated=patients_vaccinated,
+                           pending_in_period=pending_in_period,
+                           late_total=late_total,
+                           by_status=by_status_dict)
+
 # ----------------------------
 # إضافة موظف جديد
 # ----------------------------

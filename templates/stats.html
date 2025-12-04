@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>إحصائيات - نظام إدارة التطعيمات</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/lib/fontawesome/all.min.css') }}">
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif; background: #f5f7fa; color: #333; margin:0 }
+        header.app-header { display:flex; justify-content:space-between; align-items:center; padding:20px 30px; background: linear-gradient(135deg,#2a7fff 0%, #5aa1ff 100%); color:#fff }
+        header.app-header h2 { margin:0; font-size:1.4rem }
+        header.app-header a { color: white; text-decoration:none; background: rgba(255,255,255,0.12); padding:8px 12px; border-radius:8px }
+        .container { max-width:1200px; margin: 28px auto; padding: 0 20px; }
+        .controls { display:flex; gap:12px; align-items:center }
+        .controls select { padding:8px 10px; border-radius:8px; border:1px solid #e6eefc; }
+        .controls button { padding:8px 12px; border-radius:8px; border:none; background:#2a7fff; color:white }
+
+        .stats-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(220px,1fr)); gap:18px; margin-top:18px }
+        .stat-card { background: white; border-radius: 12px; padding:22px; box-shadow: 0 8px 30px rgba(42,127,255,0.06); border-left:4px solid #2a7fff }
+        .stat-card h4 { margin:0 0 8px 0; color:#16324a }
+        .stat-card .number { font-size: 2rem; font-weight:700; color:#2a7fff }
+
+        .detail-card { margin-top:18px; background:white; padding:18px; border-radius:12px; box-shadow: 0 8px 30px rgba(0,0,0,0.04) }
+        table{ width:100%; border-collapse: collapse; margin-top:12px }
+        th,td{ padding:10px; border-bottom:1px solid #eef6ff; text-align:right }
+        th{ background:#f6fbff; font-weight:700 }
+
+        @media (max-width:768px){ header.app-header { flex-direction: column; gap:12px; text-align:center } }
+    </style>
+</head>
+
+<body>
+    <header class="app-header">
+        <h2><i class="fa-solid fa-chart-line"></i> إحصائيات النظام</h2>
+        <div style="display:flex; gap:12px; align-items:center">
+            <form method="get" action="{{ url_for('stats_page') }}" style="display:flex; gap:8px; align-items:center">
+                <select name="period">
+                    <option value="daily" {% if period=='daily' %}selected{% endif %}>يومي</option>
+                    <option value="weekly" {% if period=='weekly' %}selected{% endif %}>أسبوعي</option>
+                    <option value="yearly" {% if period=='yearly' %}selected{% endif %}>سنوي</option>
+                </select>
+                <button type="submit">تحديث</button>
+            </form>
+            <a href="/main">العودة</a>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h4>المرضى</h4>
+                <div class="number">{{ total_patients }}</div>
+                <div style="color:#666; margin-top:8px">مرضى تلقوا لقاحًا في الفترة: <strong>{{ patients_vaccinated }}</strong></div>
+            </div>
+
+            <div class="stat-card">
+                <h4>أولياء الأمور</h4>
+                <div class="number">{{ total_parents }}</div>
+                <div style="color:#666; margin-top:8px">سجلات أولياء الأمور في النظام</div>
+            </div>
+
+            <div class="stat-card">
+                <h4>التطعيمات (الفترة)</h4>
+                <div class="number">{{ vaccines_done|sum(attribute='count') if vaccines_done else 0 }}</div>
+                <div style="color:#666; margin-top:8px">المؤكدة في الفترة: <strong>{{ vaccines_done|length }}</strong></div>
+                <div style="color:#666; margin-top:4px">مقررة: <strong>{{ pending_in_period }}</strong> · متأخرة: <strong>{{ late_total }}</strong></div>
+            </div>
+
+            <div class="stat-card">
+                <h4>الحالة العامة</h4>
+                <div class="number">{{ by_status.get('done', 0) + by_status.get('pending', 0) }}</div>
+                <div style="color:#666; margin-top:8px">مكتمل: <strong>{{ by_status.get('done', 0) }}</strong></div>
+                <div style="color:#666; margin-top:4px">قادم: <strong>{{ by_status.get('pending', 0) }}</strong></div>
+            </div>
+        </div>
+
+        <div class="detail-card">
+            <h3>تفصيل التطعيمات المؤكدة من <strong>{{ start }}</strong> إلى <strong>{{ end }}</strong></h3>
+            {% if vaccines_done %}
+            <table>
+                <thead>
+                    <tr><th>اللقاح</th><th>العدد</th></tr>
+                </thead>
+                <tbody>
+                    {% for v in vaccines_done %}
+                    <tr><td>{{ v.name }}</td><td>{{ v.count }}</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p style="color:#666;">لا توجد بيانات في هذه الفترة.</p>
+            {% endif %}
+        </div>
+    </div>
+</body>
+
+</html>
