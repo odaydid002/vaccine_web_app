@@ -45,7 +45,8 @@ def ensure_db_columns():
         # parent table: family booklet flag
         cur.execute("""
             ALTER TABLE parent
-            ADD COLUMN IF NOT EXISTS family_booklet_declared BOOLEAN DEFAULT FALSE
+            ADD COLUMN IF NOT EXISTS family_booklet_declared BOOLEAN DEFAULT FALSE,
+            ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT NOW()
         """)
 
         conn.commit()
@@ -830,6 +831,9 @@ def stats_page():
     today = date.today()
     if period == 'daily':
         start = today
+    elif period == 'monthly':
+        # start at first day of current month
+        start = today.replace(day=1)
     elif period == 'yearly':
         start = today - timedelta(days=365)
     else:
@@ -878,6 +882,15 @@ def stats_page():
         cur.execute("SELECT status, COUNT(*) FROM patient_vaccines GROUP BY status")
         by_status = cur.fetchall()
 
+        # family booklet declarations in period (uses parent.created_at)
+        try:
+            cur.execute("SELECT COUNT(*) FROM parent WHERE family_booklet_declared = TRUE AND created_at BETWEEN %s AND %s", (start, end))
+            family_booklet_count = cur.fetchone()[0] or 0
+        except Exception:
+            # If parent.created_at doesn't exist for some DBs, fall back to total declared
+            cur.execute("SELECT COUNT(*) FROM parent WHERE family_booklet_declared = TRUE")
+            family_booklet_count = cur.fetchone()[0] or 0
+
     # convert rows to friendly structures
     vaccines_done_list = [{'name': r[0], 'count': r[1]} for r in vaccines_done]
     by_status_dict = {r[0]: r[1] for r in by_status}
@@ -892,7 +905,8 @@ def stats_page():
                            patients_vaccinated=patients_vaccinated,
                            pending_in_period=pending_in_period,
                            late_total=late_total,
-                           by_status=by_status_dict)
+                           by_status=by_status_dict,
+                           family_booklet_count=family_booklet_count)
 
 # ----------------------------
 # إضافة موظف جديد

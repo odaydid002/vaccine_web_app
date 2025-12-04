@@ -38,6 +38,7 @@
             <form method="get" action="{{ url_for('stats_page') }}" style="display:flex; gap:8px; align-items:center">
                 <select name="period">
                     <option value="daily" {% if period=='daily' %}selected{% endif %}>يومي</option>
+                    <option value="monthly" {% if period=='monthly' %}selected{% endif %}>شهري</option>
                     <option value="weekly" {% if period=='weekly' %}selected{% endif %}>أسبوعي</option>
                     <option value="yearly" {% if period=='yearly' %}selected{% endif %}>سنوي</option>
                 </select>
@@ -55,10 +56,11 @@
                 <div style="color:#666; margin-top:8px">مرضى تلقوا لقاحًا في الفترة: <strong>{{ patients_vaccinated }}</strong></div>
             </div>
 
+            
             <div class="stat-card">
-                <h4>أولياء الأمور</h4>
-                <div class="number">{{ total_parents }}</div>
-                <div style="color:#666; margin-top:8px">سجلات أولياء الأمور في النظام</div>
+                <h4>الدفتر العائلي (مصرح)</h4>
+                <div class="number">{{ family_booklet_count }}</div>
+                <div style="color:#666; margin-top:8px">عدد الذين أعلنوا عن دفتر العائلة في الفترة</div>
             </div>
 
             <div class="stat-card">
