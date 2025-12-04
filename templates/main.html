@@ -680,6 +680,13 @@
                             <input type="tel" id="p-phone" name="p-phone" required>
                         </div>
                     </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="p-passport">رقم جواز السفر (للأجانب)</label>
+                            <input type="text" id="p-passport" name="p-passport" disabled>
+                            <small id="passport-help" style="color:#999; display:block;">يتم تفعيله عند تحديد الولي كأجنبي</small>
+                        </div>
+                    </div>
                     <div class="form-group checkbox-group">
                         <input type="checkbox" id="p-is-foreign" name="p-is-foreign" onchange="toggleForeignParent(this)">
                         <label for="p-is-foreign" style="margin: 0; font-weight: 500;">الولي أجنبي (لا يتطلب رقم تعريف وطني)</label>
@@ -754,7 +761,7 @@
                 <div class="form-section" id="section-3">
                     <h3>المستندات واللقاحات</h3>
                     <div class="form-group">
-                        <label for="birth_certificate">شهادة الميلاد (PDF/JPG/PNG)</label>
+                        <label for="birth_certificate">شهادة بيان الولادة (PDF/JPG/PNG)</label>
                         <input type="file" id="birth_certificate" name="birth_certificate" accept=".pdf,.jpg,.jpeg,.png">
                     </div>
                     <div class="form-group">
@@ -953,14 +960,28 @@
         // Toggle foreign parent: when checked, national id not required
         function toggleForeignParent(checkbox) {
             const nid = document.getElementById('p-national-id');
+            const passport = document.getElementById('p-passport');
             const help = document.getElementById('national-help');
+            const passportHelp = document.getElementById('passport-help');
+            
             if (checkbox.checked) {
                 nid.removeAttribute('required');
                 nid.value = '';
+                nid.disabled = true;
                 help.textContent = 'الولي أجنبي - رقم التعريف غير مطلوب';
+                
+                passport.disabled = false;
+                passport.setAttribute('required', 'required');
+                passportHelp.textContent = 'رقم جواز السفر مطلوب للأجانب';
             } else {
+                nid.disabled = false;
                 nid.setAttribute('required', 'required');
                 help.textContent = 'اتركه فارغًا إذا كان الولي أجنبيًا';
+                
+                passport.disabled = true;
+                passport.removeAttribute('required');
+                passport.value = '';
+                passportHelp.textContent = 'يتم تفعيله عند تحديد الولي كأجنبي';
             }
         }
 

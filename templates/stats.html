@@ -49,24 +49,30 @@
     </header>
 
     <div class="container">
+        <h3 style="color:#16324a; margin-bottom:20px">إحصائيات الموظف الحالي (الفترة المحددة)</h3>
         <div class="stats-grid">
             <div class="stat-card">
-                <h4>المرضى</h4>
-                <div class="number">{{ total_patients }}</div>
-                <div style="color:#666; margin-top:8px">مرضى تلقوا لقاحًا في الفترة: <strong>{{ patients_vaccinated }}</strong></div>
+                <h4>عدد العائلات المسجلة</h4>
+                <div class="number">{{ total_families }}</div>
+                <div style="color:#666; margin-top:8px">عائلات تم تسجيلها بواسطة هذا الموظف</div>
             </div>
 
-            
             <div class="stat-card">
                 <h4>الدفتر العائلي (مصرح)</h4>
                 <div class="number">{{ family_booklet_count }}</div>
-                <div style="color:#666; margin-top:8px">عدد الذين أعلنوا عن دفتر العائلة في الفترة</div>
+                <div style="color:#666; margin-top:8px">عدد الذين أعلنوا عن دفتر العائلة</div>
+            </div>
+
+            <div class="stat-card">
+                <h4>الدفتر العائلي (غير مصرح)</h4>
+                <div class="number">{{ family_booklet_not_declared }}</div>
+                <div style="color:#666; margin-top:8px">عدد الذين لم يعلنوا عن دفتر العائلة</div>
             </div>
 
             <div class="stat-card">
                 <h4>التطعيمات (الفترة)</h4>
-                <div class="number">{{ vaccines_done|sum(attribute='count') if vaccines_done else 0 }}</div>
-                <div style="color:#666; margin-top:8px">المؤكدة في الفترة: <strong>{{ vaccines_done|length }}</strong></div>
+                <div class="number">{{ total_vaccines_added }}</div>
+                <div style="color:#666; margin-top:8px">التطعيمات المسجلة: <strong>{{ vaccines_done|length }}</strong> نوع</div>
                 <div style="color:#666; margin-top:4px">مقررة: <strong>{{ pending_in_period }}</strong> · متأخرة: <strong>{{ late_total }}</strong></div>
             </div>
 
@@ -79,21 +85,33 @@
         </div>
 
         <div class="detail-card">
-            <h3>تفصيل التطعيمات المؤكدة من <strong>{{ start }}</strong> إلى <strong>{{ end }}</strong></h3>
-            {% if vaccines_done %}
+            <h3 style="color:#16324a; margin:0 0 16px 0"><i class="fa-solid fa-syringe"></i> تفصيل التطعيمات حسب النوع</h3>
             <table>
                 <thead>
-                    <tr><th>اللقاح</th><th>العدد</th></tr>
+                    <tr>
+                        <th>نوع التطعيم</th>
+                        <th>مكتمل</th>
+                        <th>قادم</th>
+                        <th>الإجمالي</th>
+                    </tr>
                 </thead>
                 <tbody>
-                    {% for v in vaccines_done %}
-                    <tr><td>{{ v.name }}</td><td>{{ v.count }}</td></tr>
-                    {% endfor %}
+                    {% if vaccine_stats_by_type %}
+                        {% for vaccine_name, stats in vaccine_stats_by_type.items()|sort %}
+                        <tr>
+                            <td><strong>{{ vaccine_name }}</strong></td>
+                            <td style="color:#4caf50">{{ stats.get('done', 0) }}</td>
+                            <td style="color:#ff9800">{{ stats.get('pending', 0) }}</td>
+                            <td style="font-weight:700">{{ stats.get('total', 0) }}</td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="4" style="text-align:center; color:#999">لا توجد بيانات تطعيمات</td>
+                        </tr>
+                    {% endif %}
                 </tbody>
             </table>
-            {% else %}
-            <p style="color:#666;">لا توجد بيانات في هذه الفترة.</p>
-            {% endif %}
         </div>
     </div>
 </body>

@@ -39,13 +39,24 @@ def ensure_db_columns():
             ADD COLUMN IF NOT EXISTS maternal_health VARCHAR(255),
             ADD COLUMN IF NOT EXISTS emergency_flag BOOLEAN DEFAULT FALSE,
             ADD COLUMN IF NOT EXISTS emergency_note TEXT,
-            ADD COLUMN IF NOT EXISTS birth_certificate VARCHAR(255)
+            ADD COLUMN IF NOT EXISTS birth_certificate VARCHAR(255),
+            ADD COLUMN IF NOT EXISTS created_by INT,
+            ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT NOW()
         """)
 
-        # parent table: family booklet flag
+        # parent table: family booklet flag and creator
         cur.execute("""
             ALTER TABLE parent
             ADD COLUMN IF NOT EXISTS family_booklet_declared BOOLEAN DEFAULT FALSE,
+            ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT NOW(),
+            ADD COLUMN IF NOT EXISTS created_by INT
+        """)
+
+        # patient_vaccines: track who created and who confirmed
+        cur.execute("""
+            ALTER TABLE patient_vaccines
+            ADD COLUMN IF NOT EXISTS created_by INT,
+            ADD COLUMN IF NOT EXISTS confirmed_by INT,
             ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT NOW()
         """)
 
@@ -417,7 +428,8 @@ def parent_fragment(parent_id):
 @require_role('employee')
 def confirm_vaccine(pv_id):
     with conn.cursor() as cur:
-        cur.execute("UPDATE patient_vaccines SET status='done', done_date=%s WHERE id=%s", (datetime.now().date(), pv_id))
+        # mark as done and record which employee confirmed
+        cur.execute("UPDATE patient_vaccines SET status='done', done_date=%s, confirmed_by=%s WHERE id=%s", (datetime.now().date(), session.get('user_id'), pv_id))
         # insert notification
         cur.execute("SELECT patient_id FROM patient_vaccines WHERE id=%s", (pv_id,))
         pid = cur.fetchone()
@@ -452,7 +464,8 @@ def confirm_vaccines_group():
         return jsonify({'success': False, 'error': 'no_ids'})
 
     with conn.cursor() as cur:
-        cur.execute("UPDATE patient_vaccines SET status='done', done_date=%s WHERE id = ANY(%s)", (datetime.now().date(), pv_ids))
+        # mark as done and set confirmed_by for the batch
+        cur.execute("UPDATE patient_vaccines SET status='done', done_date=%s, confirmed_by=%s WHERE id = ANY(%s)", (datetime.now().date(), session.get('user_id'), pv_ids))
         # add notifications per affected patient
         cur.execute("SELECT DISTINCT patient_id FROM patient_vaccines WHERE id = ANY(%s)", (pv_ids,))
         patients = cur.fetchall()
@@ -467,8 +480,8 @@ def confirm_vaccines_group():
 @require_role('employee')
 def unconfirm_vaccine(pv_id):
     with conn.cursor() as cur:
-        # set back to pending and clear done_date
-        cur.execute("UPDATE patient_vaccines SET status='pending', done_date=NULL WHERE id=%s", (pv_id,))
+        # set back to pending and clear done_date and confirmed_by
+        cur.execute("UPDATE patient_vaccines SET status='pending', done_date=NULL, confirmed_by=NULL WHERE id=%s", (pv_id,))
         # insert notification
         cur.execute("SELECT patient_id FROM patient_vaccines WHERE id=%s", (pv_id,))
         pid = cur.fetchone()
@@ -505,7 +518,7 @@ def unconfirm_vaccines_group():
         return jsonify({'success': False, 'error': 'no_ids'})
 
     with conn.cursor() as cur:
-        cur.execute("UPDATE patient_vaccines SET status='pending', done_date=NULL WHERE id = ANY(%s)", (pv_ids,))
+        cur.execute("UPDATE patient_vaccines SET status='pending', done_date=NULL, confirmed_by=NULL WHERE id = ANY(%s)", (pv_ids,))
         cur.execute("SELECT DISTINCT patient_id FROM patient_vaccines WHERE id = ANY(%s)", (pv_ids,))
         patients = cur.fetchall()
         for p in patients:
@@ -549,8 +562,8 @@ def register_parent():
         user_id = cur.fetchone()[0]
 
         # insert parent (child_id will be set when newborn saved)
-        cur.execute("INSERT INTO parent (national_id, address, phone, parent_id, child_id, family_booklet_declared) VALUES (%s,%s,%s,%s,%s,%s) RETURNING id",
-                    (national_id, address, phone, user_id, None, family_booklet))
+        cur.execute("INSERT INTO parent (national_id, address, phone, parent_id, child_id, family_booklet_declared, created_by) VALUES (%s,%s,%s,%s,%s,%s,%s) RETURNING id",
+                (national_id, address, phone, user_id, None, family_booklet, session.get('user_id')))
         parent_id = cur.fetchone()[0]
 
         conn.commit()
@@ -593,8 +606,8 @@ def register_newborn(parent_id):
 
     with conn.cursor() as cur:
         # insert patient
-        cur.execute("INSERT INTO patients (fullname, birth_date, gender, birthplace, weight_kg, maternal_health, emergency_flag, emergency_note, birth_certificate) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id",
-                    (full_name, None, gender, None, weight, maternal_health, emergency, emergency_note, None))
+        cur.execute("INSERT INTO patients (fullname, birth_date, gender, birthplace, weight_kg, maternal_health, emergency_flag, emergency_note, birth_certificate, created_by) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id",
+                (full_name, None, gender, None, weight, maternal_health, emergency, emergency_note, None, session.get('user_id')))
         patient_id = cur.fetchone()[0]
 
         # link parent to child: update parent.child_id
@@ -619,11 +632,11 @@ def register_newborn(parent_id):
                 continue
             given = True if request.form.get(f'given_{v_id}') else False
             if given:
-                cur.execute("INSERT INTO patient_vaccines (patient_id, vaccine_id, dose_number, scheduled_date, status, done_date) VALUES (%s,%s,%s,%s,%s,%s)",
-                            (patient_id, v_id, 1, None, 'done', None))
+                cur.execute("INSERT INTO patient_vaccines (patient_id, vaccine_id, dose_number, scheduled_date, status, done_date, created_by) VALUES (%s,%s,%s,%s,%s,%s,%s)",
+                            (patient_id, v_id, 1, None, 'done', None, session.get('user_id')))
             else:
-                cur.execute("INSERT INTO patient_vaccines (patient_id, vaccine_id, dose_number, scheduled_date, status) VALUES (%s,%s,%s,%s,%s)",
-                            (patient_id, v_id, 1, None, 'pending'))
+                cur.execute("INSERT INTO patient_vaccines (patient_id, vaccine_id, dose_number, scheduled_date, status, created_by) VALUES (%s,%s,%s,%s,%s,%s)",
+                            (patient_id, v_id, 1, None, 'pending', session.get('user_id')))
 
         # notify
         cur.execute("INSERT INTO notifications (patient_id, message) VALUES (%s,%s)", (patient_id, f"تم تسجيل المولود {full_name}"))
@@ -842,71 +855,126 @@ def stats_page():
 
     end = today
 
+    # Get current employee's ID
+    emp_id = session.get('user_id')
+
     with conn.cursor() as cur:
-        # basic totals
-        cur.execute("SELECT COUNT(*) FROM patients")
-        total_patients = cur.fetchone()[0] or 0
-
-        cur.execute("SELECT COUNT(*) FROM parent")
-        total_parents = cur.fetchone()[0] or 0
-
-        # vaccines given (done) in period grouped by vaccine name
-        cur.execute(
-            "SELECT v.name, COUNT(*) FROM patient_vaccines pv JOIN vaccines v ON v.id=pv.vaccine_id WHERE pv.status='done' AND pv.done_date BETWEEN %s AND %s GROUP BY v.name ORDER BY COUNT(*) DESC",
-            (start, end)
-        )
-        vaccines_done = cur.fetchall()
-
-        # distinct patients who received at least one vaccine in this period
-        cur.execute(
-            "SELECT COUNT(DISTINCT patient_id) FROM patient_vaccines WHERE status='done' AND done_date BETWEEN %s AND %s",
-            (start, end)
-        )
-        patients_vaccinated = cur.fetchone()[0] or 0
-
-        # pending scheduled in period
-        cur.execute(
-            "SELECT COUNT(*) FROM patient_vaccines WHERE status='pending' AND scheduled_date BETWEEN %s AND %s",
-            (start, end)
-        )
-        pending_in_period = cur.fetchone()[0] or 0
-
-        # late pending overall
-        cur.execute(
-            "SELECT COUNT(*) FROM patient_vaccines WHERE status='pending' AND scheduled_date < %s",
-            (today,)
-        )
-        late_total = cur.fetchone()[0] or 0
-
-        # vaccines by status overall
-        cur.execute("SELECT status, COUNT(*) FROM patient_vaccines GROUP BY status")
-        by_status = cur.fetchall()
-
-        # family booklet declarations in period (uses parent.created_at)
+        # EMPLOYEE-SPECIFIC STATISTICS ONLY
+        
+        # 1. عدد العائلات المسجلة - distinct families (parents with parent_id) that were created by this employee
         try:
-            cur.execute("SELECT COUNT(*) FROM parent WHERE family_booklet_declared = TRUE AND created_at BETWEEN %s AND %s", (start, end))
+            cur.execute("""
+                SELECT COUNT(DISTINCT parent_id) FROM parent 
+                WHERE created_by=%s AND parent_id IS NOT NULL AND created_at BETWEEN %s AND %s
+            """, (emp_id, start, end))
+            total_families = cur.fetchone()[0] or 0
+        except Exception:
+            total_families = 0
+
+        # 2. الدفتر العائلي (مصرح) - families that declared booklet, created by this employee
+        try:
+            cur.execute("""
+                SELECT COUNT(DISTINCT parent_id) FROM parent 
+                WHERE created_by=%s AND family_booklet_declared = TRUE AND created_at BETWEEN %s AND %s
+            """, (emp_id, start, end))
             family_booklet_count = cur.fetchone()[0] or 0
         except Exception:
-            # If parent.created_at doesn't exist for some DBs, fall back to total declared
-            cur.execute("SELECT COUNT(*) FROM parent WHERE family_booklet_declared = TRUE")
-            family_booklet_count = cur.fetchone()[0] or 0
+            family_booklet_count = 0
+
+        # 3. الدفتر العائلي (غير مصرح) - families that did NOT declare booklet, created by this employee
+        try:
+            cur.execute("""
+                SELECT COUNT(DISTINCT parent_id) FROM parent 
+                WHERE created_by=%s AND (family_booklet_declared = FALSE OR family_booklet_declared IS NULL) AND created_at BETWEEN %s AND %s
+            """, (emp_id, start, end))
+            family_booklet_not_declared = cur.fetchone()[0] or 0
+        except Exception:
+            family_booklet_not_declared = 0
+
+        # 4. التطعيمات (الفترة) - vaccines added by this employee in period, grouped by vaccine name
+        try:
+            cur.execute("""
+                SELECT v.name, COUNT(*) FROM patient_vaccines pv 
+                JOIN vaccines v ON v.id=pv.vaccine_id 
+                WHERE pv.created_by=%s AND pv.created_at BETWEEN %s AND %s 
+                GROUP BY v.name ORDER BY COUNT(*) DESC
+            """, (emp_id, start, end))
+            vaccines_done = cur.fetchall()
+        except Exception:
+            vaccines_done = []
+
+        # Total vaccines added by employee in period
+        total_vaccines_added = sum(r[1] for r in vaccines_done) if vaccines_done else 0
+
+        # Pending and late vaccines (for this employee's created records)
+        try:
+            cur.execute("""
+                SELECT COUNT(*) FROM patient_vaccines 
+                WHERE created_by=%s AND status='pending' AND scheduled_date BETWEEN %s AND %s
+            """, (emp_id, start, end))
+            pending_in_period = cur.fetchone()[0] or 0
+        except Exception:
+            pending_in_period = 0
+
+        try:
+            cur.execute("""
+                SELECT COUNT(*) FROM patient_vaccines 
+                WHERE created_by=%s AND status='pending' AND scheduled_date < %s
+            """, (emp_id, today))
+            late_total = cur.fetchone()[0] or 0
+        except Exception:
+            late_total = 0
+
+        # 5. الحالة العامة - status breakdown of all vaccines created by this employee
+        try:
+            cur.execute("""
+                SELECT status, COUNT(*) FROM patient_vaccines 
+                WHERE created_by=%s 
+                GROUP BY status
+            """, (emp_id,))
+            by_status = cur.fetchall()
+        except Exception:
+            by_status = []
+
+        # Detailed vaccine statistics by type and status
+        try:
+            cur.execute("""
+                SELECT v.name, pv.status, COUNT(*) FROM patient_vaccines pv 
+                JOIN vaccines v ON v.id=pv.vaccine_id 
+                WHERE pv.created_by=%s 
+                GROUP BY v.name, pv.status 
+                ORDER BY v.name, pv.status
+            """, (emp_id,))
+            vaccine_details = cur.fetchall()
+        except Exception:
+            vaccine_details = []
 
     # convert rows to friendly structures
     vaccines_done_list = [{'name': r[0], 'count': r[1]} for r in vaccines_done]
     by_status_dict = {r[0]: r[1] for r in by_status}
+    
+    # Reorganize vaccine details by vaccine name
+    vaccine_stats_by_type = {}
+    for vaccine_name, status, count in vaccine_details:
+        if vaccine_name not in vaccine_stats_by_type:
+            vaccine_stats_by_type[vaccine_name] = {'done': 0, 'pending': 0, 'total': 0}
+        vaccine_stats_by_type[vaccine_name][status] = count
+        vaccine_stats_by_type[vaccine_name]['total'] += count
 
     return render_template('stats.html',
-                           period=period,
-                           start=start,
-                           end=end,
-                           total_patients=total_patients,
-                           total_parents=total_parents,
-                           vaccines_done=vaccines_done_list,
-                           patients_vaccinated=patients_vaccinated,
-                           pending_in_period=pending_in_period,
-                           late_total=late_total,
-                           by_status=by_status_dict,
-                           family_booklet_count=family_booklet_count)
+        period=period,
+        start=start,
+        end=end,
+        total_families=total_families,
+        vaccines_done=vaccines_done_list,
+        pending_in_period=pending_in_period,
+        late_total=late_total,
+        by_status=by_status_dict,
+        family_booklet_count=family_booklet_count,
+        family_booklet_not_declared=family_booklet_not_declared,
+        total_vaccines_added=total_vaccines_added,
+        vaccine_stats_by_type=vaccine_stats_by_type
+    )
 
 # ----------------------------
 # إضافة موظف جديد
@@ -990,10 +1058,10 @@ def add_patient():
         #  2. إدخال بيانات الطفل (المريض) وجلب رقم المعرّف بعد الإدخال
         cur.execute(
             """
-            INSERT INTO patients (fullname, birth_date, gender, birthplace, weight_kg, maternal_health, emergency_flag, emergency_note, birth_certificate)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id
+            INSERT INTO patients (fullname, birth_date, gender, birthplace, weight_kg, maternal_health, emergency_flag, emergency_note, birth_certificate, created_by)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id
             """,
-            (name, birth, gender, birthplace, weight, maternal_health, emergency_flag, emergency_note, None)
+            (name, birth, gender, birthplace, weight, maternal_health, emergency_flag, emergency_note, None, session.get('user_id'))
         )
         patient_id = cur.fetchone()[0]
 
@@ -1058,18 +1126,18 @@ def add_patient():
             if given:
                 cur.execute(
                     """
-                    INSERT INTO patient_vaccines (patient_id, vaccine_id, dose_number, scheduled_date, status, done_date)
-                    VALUES (%s, %s, %s, %s, %s, %s)
+                    INSERT INTO patient_vaccines (patient_id, vaccine_id, dose_number, scheduled_date, status, done_date, created_by)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s)
                     """,
-                    (patient_id, v_id, 1, birth_date, 'done', birth_date)
+                    (patient_id, v_id, 1, birth_date, 'done', birth_date, session.get('user_id'))
                 )
             else:
                 cur.execute(
                     """
-                    INSERT INTO patient_vaccines (patient_id, vaccine_id, dose_number, scheduled_date, status)
-                    VALUES (%s, %s, %s, %s, %s)
+                    INSERT INTO patient_vaccines (patient_id, vaccine_id, dose_number, scheduled_date, status, created_by)
+                    VALUES (%s, %s, %s, %s, %s, %s)
                     """,
-                    (patient_id, v_id, 1, birth_date, 'pending')
+                    (patient_id, v_id, 1, birth_date, 'pending', session.get('user_id'))
                 )
 
         # now insert scheduled vaccines from vaccine_schedule (skip those already selected)
@@ -1085,13 +1153,14 @@ def add_patient():
                 continue
 
             cur.execute("""
-                INSERT INTO patient_vaccines (patient_id, vaccine_id, dose_number, scheduled_date)
-                VALUES (%s, %s, %s, %s)
+                INSERT INTO patient_vaccines (patient_id, vaccine_id, dose_number, scheduled_date, created_by)
+                VALUES (%s, %s, %s, %s, %s)
             """, (
                 patient_id,
                 vaccine_id,
                 dose_number,
-                birth_date + timedelta(days=age_m * 30)
+                birth_date + timedelta(days=age_m * 30),
+                session.get('user_id')
             ))
 
         cur.execute("""
