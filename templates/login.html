@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/myLib.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/lib/fontawesome/all.min.css') }}">
+    <title>تسجيل الدخول – منصة التطعيمات</title>
+</head>
+<body>
+
+    <div class="background"></div>
+
+    <div class="container">
+        <div class="card">
+            <div class="left">
+                <div class="profile2 h4pc">
+                    <img src="{{ url_for('static', filename='assets/logo.png') }}" alt="Profile">
+                    <div>
+                        <strong>وزارة الصحة</strong>
+                        <div class="role">منصة الخدمات الصحية الإلكترونية</div>
+                    </div>
+                </div>
+                <h2>تسجيل الدخول</h2>
+                <p class="sub">
+                    أدخل بريدك الإلكتروني وكلمة المرور للوصول إلى منصة التطعيمات
+                </p>
+
+                <form method="POST" action="/login">
+                    <label>اسم المستخدم</label>
+                    <input id="username" name="username" type="text" placeholder="ادخل اسم المستخدم (الاسم . اللقب مثال: ahmed.hani)">
+
+                    <label>كلمة المرور</label>
+                    <input id="password" name="password" type="password" placeholder="ادخل كلمة المرور">
+                        <button type="submit" class="continue-btn">تسجيل الدخول →</button>
+                </form>
+
+            </div>
+            <div class="right flex column">
+                <p class="quote">
+                    "تهدف منصة التطعيمات إلى تسهيل الوصول إلى سجلات التطعيم،  
+                    متابعة الجرعات المطلوبة، وتذكيرك بالمواعيد القادمة لضمان صحتك وصحة أسرتك."
+                </p>
+
+                <div class="profile">
+                    <img src="{{ url_for('static', filename='assets/logo.png') }}" alt="Profile">
+                    <div>
+                        <strong>وزارة الصحة</strong>
+                        <div class="role">منصة الخدمات الصحية الإلكترونية</div>
+                    </div>
+                </div>
+                <div class="break-line"></div>
+                <img class="frame" src="{{ url_for('static', filename='assets/Frame.png') }}" alt="Profile">
+            </div>       
+        </div>
+    </div>
+
+</body>
+</html>

@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>تسجيل المولود - نظام التطعيم</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  </head>
+  <body class="bg-light">
+    <div class="container py-5">
+      <div class="row justify-content-center">
+        <div class="col-lg-9">
+          <div class="card shadow-sm">
+            <div class="card-body">
+              <h4 class="card-title mb-3">خطوة 2 — تسجيل المولود</h4>
+              <form id="newborn-form" method="post" action="" enctype="multipart/form-data">
+                <input type="hidden" name="parent_id" value="{{ parent_id }}">
+                <div class="row g-3">
+                  <div class="col-md-4">
+                    <label class="form-label" for="maternal_health">حالة صحية للأم</label>
+                    <select id="maternal_health" class="form-select" name="maternal_health" required>
+                      <option value="جيدة">جيدة</option>
+                      <option value="متوسطة">متوسطة</option>
+                      <option value="مقلقة">مقلقة</option>
+                    </select>
+                  </div>
+
+                  <div class="col-md-4">
+                    <label class="form-label" for="weight">وزن المولود (kg)</label>
+                    <input name="weight" id="weight" type="number" step="0.01" class="form-control" required placeholder="مثال: 3.2">
+                    <div id="weight-alert" class="mt-1 fw-bold"></div>
+                  </div>
+
+                  <div class="col-md-4">
+                    <label class="form-label" for="gender">الجنس</label>
+                    <select id="gender" class="form-select" name="gender" required>
+                      <option value="ذكر">ذكر</option>
+                      <option value="أنثى">أنثى</option>
+                    </select>
+                  </div>
+
+                  <div class="col-md-6">
+                    <label class="form-label" for="nb_first">الاسم الأول للمولود</label>
+                    <input id="nb_first" required name="first_name" class="form-control" placeholder="الاسم">
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label" for="nb_last">اللقب</label>
+                    <input id="nb_last" required name="last_name" class="form-control" placeholder="اللقب">
+                  </div>
+
+                  <div class="col-12">
+                    <label class="form-label">التطعيمات</label>
+                    <div class="list-group scroll-list">
+                      {% for v in vaccines %}
+                      <label class="list-group-item d-flex align-items-center">
+                        <input class="form-check-input me-2" type="checkbox" name="vaccines" value="{{ v[0] }}">
+                        <div>
+                          <div>{{ v[1] }}</div>
+                          <small class="text-muted">اضغط لتحديد أن يتم جدولته/تسجيله</small>
+                        </div>
+                        <div class="ms-auto form-check form-switch">
+                          <input class="form-check-input" type="checkbox" name="given_{{ v[0] }}" aria-label="تم إعطاء اللقاح الآن؟">
+                          <label class="form-check-label small">معطى الآن</label>
+                        </div>
+                      </label>
+                      {% endfor %}
+                    </div>
+                  </div>
+
+                  <div class="col-12">
+                    <div class="form-check">
+                      <input class="form-check-input" type="checkbox" id="emergency" name="emergency">
+                      <label class="form-check-label" for="emergency">حالة استعجالية/طارئة</label>
+                    </div>
+                  </div>
+
+                  <div class="col-12">
+                    <label class="form-label" for="emergency_note">ملاحظات عن الحالة</label>
+                    <textarea id="emergency_note" name="emergency_note" class="form-control" rows="3" placeholder="أي تفاصيل عن الحالة"></textarea>
+                  </div>
+
+                  <div class="col-md-6">
+                    <label class="form-label" for="birth_certificate">رفع شهادة بيان الولادة</label>
+                    <input id="birth_certificate" class="form-control" type="file" name="birth_certificate" accept=".pdf,.jpg,.jpeg,.png">
+                  </div>
+
+                  <div class="col-12 text-end">
+                    <button type="submit" class="btn btn-success">حفظ وإكمال</button>
+                    <a href="/main" class="btn btn-secondary">إلغاء</a>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+      const weightInput = document.getElementById('weight');
+      const weightAlert = document.getElementById('weight-alert');
+      if (weightInput) {
+        weightInput.addEventListener('input', ()=>{
+          const v = parseFloat(weightInput.value);
+          if (!isNaN(v)) {
+            if (v < 2) { weightAlert.innerText='نقص في الوزن'; weightAlert.style.color='red'; }
+            else { weightAlert.innerText='طبيعي'; weightAlert.style.color='green'; }
+          } else weightAlert.innerText='';
+        });
+      }
+    </script>
+  </body>
+</html>

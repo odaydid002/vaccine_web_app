@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تفاصيل الولي والأطفال</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/lib/fontawesome/all.min.css') }}">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f7fa;
+            color: #333;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 30px;
+            background: linear-gradient(135deg, #2a7fff 0%, #5aa1ff 100%);
+            box-shadow: 0 4px 15px rgba(42,127,255,0.15);
+        }
+
+        header h2 {
+            font-size: 1.8rem;
+            color: white;
+            font-weight: 600;
+        }
+
+        header a {
+            text-decoration: none;
+            color: white;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.2);
+            transition: background 0.3s ease;
+        }
+
+        header a:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 30px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+        }
+
+        .card h3 {
+            color: #16324a;
+            font-size: 1.4rem;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card h4 {
+            color: #16324a;
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+        }
+
+        .info-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 15px;
+        }
+
+        .info-item {
+            padding: 12px;
+            background: #f8fbff;
+            border-radius: 8px;
+            border-left: 4px solid #2a7fff;
+        }
+
+        .info-item strong {
+            color: #16324a;
+            display: block;
+            margin-bottom: 4px;
+            font-weight: 600;
+        }
+
+        .info-item span {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .section-title {
+            color: #16324a;
+            font-size: 1.3rem;
+            margin-top: 30px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .child-section {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+        }
+
+        .child-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .child-header h4 {
+            margin: 0;
+            color: #2a7fff;
+            font-size: 1.2rem;
+        }
+
+        .child-header .badge {
+            background: #e8eef5;
+            color: #16324a;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        th {
+            background: #f0f4ff;
+            padding: 12px;
+            text-align: right;
+            font-weight: 600;
+            color: #16324a;
+            border-bottom: 2px solid #d6e9ff;
+            font-size: 14px;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #e8eef5;
+            color: #555;
+            font-size: 14px;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-confirmed {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-mixed {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-confirm {
+            background: #4caf50;
+            color: white;
+        }
+
+        .btn-confirm:hover {
+            background: #45a049;
+        }
+
+        .btn-unconfirm {
+            background: #ff9800;
+            color: white;
+        }
+
+        .btn-unconfirm:hover {
+            background: #e68900;
+        }
+
+        .btn-secondary {
+            background: #e8e8e8;
+            color: #555;
+        }
+
+        .btn-secondary:hover {
+            background: #dcdcdc;
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 30px;
+            color: #999;
+        }
+
+        .child-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .child-info-item {
+            padding: 10px;
+            background: #f8fbff;
+            border-radius: 6px;
+            border-left: 3px solid #2a7fff;
+        }
+
+        .child-info-item strong {
+            display: block;
+            color: #16324a;
+            font-size: 12px;
+            margin-bottom: 4px;
+            font-weight: 600;
+        }
+
+        .child-info-item span {
+            color: #666;
+            font-size: 13px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+
+        .success-message {
+            background: #d4edda;
+            color: #155724;
+            padding: 12px 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border-left: 4px solid #28a745;
+        }
+
+        @media (max-width: 768px) {
+            .info-row, .child-info {
+                grid-template-columns: 1fr;
+            }
+
+            header {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+
+            .container {
+                padding: 15px;
+            }
+
+            table {
+                font-size: 12px;
+            }
+
+            th, td {
+                padding: 8px;
+            }
+
+            .action-buttons {
+                flex-wrap: wrap;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h2>تفاصيل الولي والأطفال</h2>
+        <a href="/main"><i class="fa-solid fa-arrow-left"></i> العودة للرئيسية</a>
+    </header>
+
+    <div class="container">
+        <!-- Parent Information Card -->
+        <div class="card">
+            <h3><i class="fa-solid fa-user"></i> بيانات الولي</h3>
+            <div class="info-row">
+                <div class="info-item">
+                    <strong>الرقم الوطني</strong>
+                    <span>{{ parent.national_id }}</span>
+                </div>
+                <div class="info-item">
+                    <strong>رقم الهاتف</strong>
+                    <span>{{ parent.phone }}</span>
+                </div>
+            </div>
+            <div class="info-row">
+                <div class="info-item">
+                    <strong>العنوان</strong>
+                    <span>{{ parent.address or '-' }}</span>
+                </div>
+                <div class="info-item">
+                    <strong>معرف السجل</strong>
+                    <span>#{{ parent.id }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Children Section -->
+        <div style="margin-bottom: 10px;">
+            <h2 class="section-title"><i class="fa-solid fa-children"></i> الأطفال المسجلين</h2>
+        </div>
+
+        {% if children %}
+            {% for child in children %}
+            <div class="child-section">
+                <div class="child-header">
+                    <div>
+                        <h4>{{ child.fullname }}</h4>
+                        <small style="color: #999;">معرف: #{{ child.id }}</small>
+                    </div>
+                    <div class="badge">{{ child.gender }}</div>
+                </div>
+
+                <div class="child-info">
+                    <div class="child-info-item">
+                        <strong>تاريخ الميلاد</strong>
+                        <span>{{ child.birth_date }}</span>
+                    </div>
+                    <div class="child-info-item">
+                        <strong>الوزن</strong>
+                        <span>{{ child.weight_kg or '-' }} كجم</span>
+                    </div>
+                    <div class="child-info-item">
+                        <strong>شهادة الميلاد</strong>
+                        <span>
+                            {% if child.birth_certificate %}
+                                <a href="{{ child.birth_certificate }}" target="_blank" style="color: #2a7fff; text-decoration: none;">
+                                    <i class="fa-solid fa-file-pdf"></i> عرض
+                                </a>
+                            {% else %}
+                                <span style="color: #999;">-</span>
+                            {% endif %}
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Vaccines Table -->
+                {% if vaccines[child.id] %}
+                    <div>
+                        <h5 style="color: #16324a; margin-bottom: 12px;">جدول التطعيمات</h5>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>اللقاحات</th>
+                                    <th>الموعد المقرر</th>
+                                    <th>الحالة</th>
+                                    <th>الإجراء</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for group in vaccines[child.id] %}
+                                <tr id="group-row-{{ loop.index0 }}-{{ child.id }}">
+                                    <td title="{{ group.names }}">{{ group.names }}</td>
+                                    <td>
+                                        {% if group.scheduled_date %}
+                                            {{ group.scheduled_date }}
+                                        {% else %}
+                                            <span style="color: #999;">الآن</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if group.status == 'مؤكد' %}
+                                            <span class="status-badge status-confirmed">مؤكد</span>
+                                        {% elif group.status == 'قادم' %}
+                                            <span class="status-badge status-pending">قادم</span>
+                                        {% else %}
+                                            <span class="status-badge status-mixed">{{ group.status }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            {% if group.status != 'مؤكد' %}
+                                                <button class="btn btn-confirm confirm-group-btn" 
+                                                        data-pv-ids="{{ group.pv_ids|join(',') }}" 
+                                                        data-child-id="{{ child.id }}" 
+                                                        data-group-index="{{ loop.index0 }}">
+                                                    <i class="fa-solid fa-check"></i> تأكيد
+                                                </button>
+                                            {% else %}
+                                                <button class="btn btn-unconfirm unconfirm-group-btn" 
+                                                        data-pv-ids="{{ group.pv_ids|join(',') }}" 
+                                                        data-child-id="{{ child.id }}" 
+                                                        data-group-index="{{ loop.index0 }}">
+                                                    <i class="fa-solid fa-undo"></i> إلغاء
+                                                </button>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="no-data">
+                        <i class="fa-solid fa-inbox"></i>
+                        <p>لا توجد سجلات تطعيمات لهذا الطفل</p>
+                    </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="card no-data">
+                <i class="fa-solid fa-inbox" style="font-size: 2rem; margin-bottom: 10px;"></i>
+                <p>لا يوجد أطفال مرتبطين بهذا الولي</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <script>
+        // Confirm vaccines group via AJAX
+        async function confirmGroupAjax(pvIds, childId, groupIndex) {
+            const ids = typeof pvIds === 'string' 
+                ? pvIds.split(',').map(s => parseInt(s.trim())).filter(Number.isFinite)
+                : pvIds;
+            
+            if (!Array.isArray(ids) || ids.length === 0) return;
+
+            try {
+                const response = await fetch('/confirm_vaccines_group', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({ pv_ids: ids })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    const row = document.getElementById(`group-row-${groupIndex}-${childId}`);
+                    if (row) {
+                        // Update status cell
+                        const statusCell = row.cells[2];
+                        statusCell.innerHTML = '<span class="status-badge status-confirmed">مؤكد</span>';
+                        
+                        // Update action button
+                        const actionCell = row.cells[3];
+                        actionCell.innerHTML = `
+                            <div class="action-buttons">
+                                <button class="btn btn-unconfirm unconfirm-group-btn" 
+                                        data-pv-ids="${ids.join(',')}" 
+                                        data-child-id="${childId}" 
+                                        data-group-index="${groupIndex}">
+                                    <i class="fa-solid fa-undo"></i> إلغاء
+                                </button>
+                            </div>
+                        `;
+                    }
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('حدث خطأ أثناء تأكيد التطعيمات');
+            }
+        }
+
+        // Unconfirm vaccines group via AJAX
+        async function unconfirmGroupAjax(pvIds, childId, groupIndex) {
+            const ids = typeof pvIds === 'string' 
+                ? pvIds.split(',').map(s => parseInt(s.trim())).filter(Number.isFinite)
+                : pvIds;
+            
+            if (!Array.isArray(ids) || ids.length === 0) return;
+
+            try {
+                const response = await fetch('/unconfirm_vaccines_group', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({ pv_ids: ids })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    const row = document.getElementById(`group-row-${groupIndex}-${childId}`);
+                    if (row) {
+                        // Update status cell
+                        const statusCell = row.cells[2];
+                        statusCell.innerHTML = '<span class="status-badge status-pending">قادم</span>';
+                        
+                        // Update action button
+                        const actionCell = row.cells[3];
+                        actionCell.innerHTML = `
+                            <div class="action-buttons">
+                                <button class="btn btn-confirm confirm-group-btn" 
+                                        data-pv-ids="${ids.join(',')}" 
+                                        data-child-id="${childId}" 
+                                        data-group-index="${groupIndex}">
+                                    <i class="fa-solid fa-check"></i> تأكيد
+                                </button>
+                            </div>
+                        `;
+                    }
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('حدث خطأ أثناء إلغاء التأكيد');
+            }
+        }
+
+        // Event delegation for dynamic buttons
+        document.addEventListener('click', function(e) {
+            const confirmBtn = e.target.closest('.confirm-group-btn');
+            const unconfirmBtn = e.target.closest('.unconfirm-group-btn');
+
+            if (confirmBtn) {
+                const pvIds = confirmBtn.dataset.pvIds;
+                const childId = parseInt(confirmBtn.dataset.childId);
+                const groupIndex = parseInt(confirmBtn.dataset.groupIndex);
+                confirmGroupAjax(pvIds, childId, groupIndex);
+            }
+
+            if (unconfirmBtn) {
+                const pvIds = unconfirmBtn.dataset.pvIds;
+                const childId = parseInt(unconfirmBtn.dataset.childId);
+                const groupIndex = parseInt(unconfirmBtn.dataset.groupIndex);
+                unconfirmGroupAjax(pvIds, childId, groupIndex);
+            }
+        });
+    </script>
+</body>
+
+</html>

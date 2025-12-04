@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>تسجيل الولي - نظام التطعيم</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  </head>
+  <body class="bg-light">
+    <div class="container py-5">
+      <div class="row justify-content-center">
+        <div class="col-lg-8">
+          <div class="card shadow-sm">
+            <div class="card-body">
+              <h4 class="card-title mb-3">خطوة 1 — تسجيل الولي</h4>
+              <form id="parent-form" method="post" action="/register_parent">
+                <div class="row g-3">
+                  <div class="col-md-6">
+                    <label class="form-label">الاسم الأول</label>
+                    <input required name="first_name" id="first_name" class="form-control" placeholder="مثال: Ahmed">
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label">اللقب</label>
+                    <input required name="last_name" id="last_name" class="form-control" placeholder="مثال: Khaled">
+                  </div>
+
+                  <div class="col-md-6">
+                    <label class="form-label">مكان الازدياد</label>
+                    <input name="birthplace" id="birthplace" class="form-control" placeholder="مثال: الجزائر العاصمة">
+                  </div>
+
+                  <div class="col-md-6">
+                    <label class="form-label">العنوان</label>
+                    <input name="address" id="address" class="form-control" placeholder="الولاية، البلدية">
+                  </div>
+
+                  <div class="col-md-6">
+                    <label class="form-label">رقم الهاتف</label>
+                    <input required name="phone" id="phone" class="form-control" placeholder="مثال: 0550123456">
+                  </div>
+
+                  <div class="col-md-6">
+                    <label class="form-label">الرقم الوطني (18 رقم)</label>
+                    <input required name="national_id" id="national_id" class="form-control" maxlength="18" minlength="18" pattern="\d{18}" placeholder="18 رقماً" title="يجب أن يكون 18 رقم" />
+                    <div class="form-text">سيستخدم رقم التعريف الوطني ككلمة مرور مشفّرة تلقائياً.</div>
+                  </div>
+
+                  <div class="col-12">
+                    <div class="form-check">
+                      <input class="form-check-input" type="checkbox" value="1" id="family_booklet" name="family_booklet">
+                      <label class="form-check-label" for="family_booklet">الدفتر العائلي معلن</label>
+                    </div>
+                  </div>
+
+                  <div class="col-12 text-end">
+                    <button type="submit" class="btn btn-primary">التالي — تسجيل المولود</button>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  </body>
+</html>

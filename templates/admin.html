@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="ar">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/lib/fontawesome/all.min.css') }}">
+    <title>Admin Panel</title>
+</head>
+
+<body>
+
+     <header>
+         <a href="/logout" aria-label="تسجيل الخروج"><i class="fa-solid fa-arrow-right-from-bracket"></i></a>
+        <h2>نظام إدارة المستخدمين</h2>
+    </header>
+
+    <!-- ===== TOP CARDS ===== -->
+    <div class="cards-container">
+        <div class="stat-card">
+            <div class="stat-card-title">إجمالي المستخدمين</div>
+            <div class="stat-card-value">{{ normal_users|length  +  employee_count|length}}</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-card-title">المشرفون</div>
+            <div class="stat-card-value">{{ employee_count|length }}</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-card-title">المستخدمون العاديون</div>
+            <div class="stat-card-value">{{ normal_users|length}}</div>
+        </div>
+    </div>
+
+    <!-- ===== ACTIONS BAR ===== -->
+        <div class="actions-bar">
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="ابحث عن مستخدم..." onkeyup="searchUser()">
+        </div>
+        <button type="button" class="blue-btn" onclick="openAddModal()">
+            <i class="fa-solid fa-plus"></i> إضافة مستخدم
+        </button>
+    </div>
+
+    <!-- ===== TABLE ===== -->
+    <div id="userTable">
+        <div class="table-head w100">
+            <p>الإجراءات</p>
+            <p>الدور</p>
+            <p>اسم المستخدم</p>
+        </div>
+        <div class="table-body w100 flex column">
+            {% for u in users %}
+            <div class="table-row">
+                <div class="flex a-center j-end gap">
+                    <a title="حذف" href="/delete_user/{{ u[0] }}" onclick="return confirm('هل أنت متأكد؟')">
+                        <i class="fa-regular fa-trash-can"></i>
+                    </a>
+                    <a title="تعديل" href="#" onclick="openEditModal('{{ u[0] }}','{{ u[1] }}')">
+                        <i class="fa-regular fa-pen-to-square"></i>
+                    </a>
+                </div>
+                <p>{{ u[2] }}</p>
+                <p>{{ u[1] }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- ===== ADD USER MODAL ===== -->
+    <div id="addModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeAddModal()"><i class="fa-solid fa-xmark"></i></span>
+
+            <h3>إضافة مستخدم</h3>
+
+            <form method="POST" action="/add_employee">
+                <label for="add_username" class="visually-hidden">اسم المستخدم</label>
+                <input id="add_username" type="text" name="username" placeholder="اسم المستخدم" required>
+                <label for="add_password" class="visually-hidden">كلمة المرور</label>
+                <input id="add_password" type="password" name="password" placeholder="كلمة المرور" required>
+
+                <button type="submit" class="blue-btn full-width-btn">إضافة</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ===== EDIT USER MODAL ===== -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeEditModal()"><i class="fa-solid fa-xmark"></i></span>
+
+            <h3>تعديل المستخدم</h3>
+
+            <form method="POST" action="/edit_user">
+                <input type="hidden" id="edit_id" name="user_id">
+
+                <label for="edit_username" class="visually-hidden">اسم المستخدم</label>
+                <input type="text" id="edit_username" name="username" required>
+
+                <label for="edit_password" class="visually-hidden">كلمة المرور (اختياري)</label>
+                <input type="password" id="edit_password" name="password" placeholder="كلمة المرور (اختياري)">
+                <button type="submit" class="blue-btn full-width-btn">حفظ</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ===== JS ===== -->
+    <script>
+        function searchUser() {
+            let input = document.getElementById("searchInput").value.toLowerCase();
+            let rows = document.querySelectorAll(".table-row");
+
+            rows.forEach(row => {
+                let name = row.children[2].textContent.toLowerCase();
+                row.style.display = name.includes(input) ? "" : "none";
+            });
+        }
+
+        function openAddModal() {
+            document.getElementById('addModal').style.display = "flex";
+        }
+        function closeAddModal() {
+            document.getElementById('addModal').style.display = "none";
+        }
+
+        function openEditModal(id, username) {
+            document.getElementById("edit_id").value = id;
+            document.getElementById("edit_username").value = username;
+
+            document.getElementById('editModal').style.display = "flex";
+        }
+        function closeEditModal() {
+            document.getElementById('editModal').style.display = "none";
+        }
+
+        window.onclick = function (e) {
+            if (e.target == document.getElementById('addModal')) closeAddModal();
+            if (e.target == document.getElementById('editModal')) closeEditModal();
+        };
+    </script>
+
+</body>
+
+</html>

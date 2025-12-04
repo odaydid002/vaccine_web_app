@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>شهادة تطعيم</title>
+    <style>
+        body { font-family: 'Arial', Tahoma, sans-serif; direction: rtl; color: #111; }
+        .page { width: 800px; margin: 0 auto; background: white; padding: 36px; }
+        .header { text-align: center; margin-bottom: 18px; }
+        .title { font-size: 26px; font-weight: 700; margin-bottom: 6px; }
+        .subtitle { font-size: 14px; color: #444; }
+        .meta { margin-top: 18px; display: flex; justify-content: space-between; gap: 12px; }
+        .meta .left, .meta .right { width: 48%; }
+        .meta .label { font-weight: 700; margin-bottom: 6px; }
+        .info { padding: 10px 12px; border: 1px solid #333; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 18px; }
+        th, td { border: 1px solid #333; padding: 8px; text-align: right; font-size: 14px; }
+        th { background: #f5f5f5; }
+        .footer { margin-top: 24px; display:flex; justify-content: space-between; align-items: center; }
+        .sign { text-align: center; }
+        .small { font-size: 12px; color: #666; }
+        @media print { .page { box-shadow: none; margin: 0; } }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <div class="header">
+            <div class="title">شهادة تطعيم</div>
+            <div class="subtitle">وزارة الصحة - مركز الخدمات المتعددة للتطعيمات</div>
+        </div>
+
+        <div class="meta">
+            <div class="left">
+                <div class="label">اسم الطفل</div>
+                <div class="info">{{ child.fullname }}</div>
+            </div>
+            <div class="right">
+                <div class="label">تاريخ الميلاد</div>
+                <div class="info">{{ child.birth_date }}</div>
+            </div>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>اللقاح</th>
+                    <th>الجرعة</th>
+                    <th>الحالة</th>
+                    <th>تاريخ الإعطاء</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for v in vaccines %}
+                <tr>
+                    <td>{{ v.name }}</td>
+                    <td>{{ v.dose }}</td>
+                    <td>{% if v.status == 'done' %}تم إعطاءه{% else %}{{ v.status }}{% endif %}</td>
+                    <td>{{ v.done_date or '-' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="footer">
+            <div class="small">تاريخ الإصدار: {{ issued_date }}</div>
+            <div class="sign">
+                <div>ختم المركز</div>
+                <div style="margin-top:28px;">______________________</div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

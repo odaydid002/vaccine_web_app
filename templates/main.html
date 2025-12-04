@@ -1,0 +1,989 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>نظام إدارة التطعيمات</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/lib/fontawesome/all.min.css') }}">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f7fa;
+            color: #333;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 30px;
+            background: linear-gradient(135deg, #2a7fff 0%, #5aa1ff 100%);
+            box-shadow: 0 4px 15px rgba(42,127,255,0.15);
+        }
+
+        header h2 {
+            font-size: 1.8rem;
+            color: white;
+            font-weight: 600;
+        }
+
+        header a {
+            text-decoration: none;
+            color: white;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 8px;
+            transition: background 0.3s ease;
+        }
+
+        header a:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .stats {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            padding: 30px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: white;
+            padding: 25px;
+            flex: 1;
+            min-width: 200px;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+
+        .card h3 {
+            margin-bottom: 12px;
+            font-size: 1rem;
+            color: #666;
+            font-weight: 500;
+        }
+
+        .card p {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #2a7fff;
+        }
+
+        .top-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            padding: 0 30px 20px 30px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+        }
+
+        .blue {
+            background: #2a7fff;
+            color: white;
+        }
+
+        .blue:hover {
+            background: #1f5fd9;
+        }
+
+        .gray {
+            background: #e8e8e8;
+            color: #555;
+        }
+
+        .gray:hover {
+            background: #dcdcdc;
+        }
+
+        .search-box {
+            margin: 0 30px 20px 30px;
+            padding: 12px 16px;
+            width: calc(100% - 60px);
+            max-width: 400px;
+            border-radius: 8px;
+            border: 2px solid #e0e0e0;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .search-box:focus {
+            border-color: #2a7fff;
+            box-shadow: 0 0 8px rgba(42,127,255,0.3);
+        }
+
+        .table-container {
+            padding: 30px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+        }
+
+        th {
+            background: #f0f4ff;
+            padding: 16px;
+            text-align: right;
+            font-weight: 600;
+            color: #16324a;
+            font-size: 14px;
+            border-bottom: 2px solid #d6e9ff;
+        }
+
+        td {
+            padding: 14px 16px;
+            border-bottom: 1px solid #e8eef5;
+            color: #555;
+            font-size: 14px;
+        }
+
+        tr.clickable {
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        tr.clickable:hover {
+            background: #f8fbff;
+        }
+
+        .print-btn, .view-btn {
+            background: #4caf50;
+            color: white;
+            padding: 8px 14px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 0 4px;
+        }
+
+        .print-btn:hover {
+            background: #45a049;
+        }
+
+        .view-btn {
+            background: #2a7fff;
+        }
+
+        .view-btn:hover {
+            background: #1f5fd9;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 900px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            color: #16324a;
+            font-size: 1.5rem;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+            color: #999;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .close-btn:hover {
+            color: #333;
+        }
+
+        /* Form Styles */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            color: #333;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        input[type="text"],
+        input[type="email"],
+        input[type="date"],
+        input[type="number"],
+        input[type="tel"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 11px 14px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        input[type="text"]:focus,
+        input[type="email"]:focus,
+        input[type="date"]:focus,
+        input[type="number"]:focus,
+        input[type="tel"]:focus,
+        select:focus,
+        textarea:focus {
+            border-color: #2a7fff;
+            box-shadow: 0 0 8px rgba(42,127,255,0.2);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: auto;
+            margin: 0;
+        }
+
+        .stepper {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .step {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: #e8eef5;
+            color: #666;
+            font-weight: 600;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .step.active {
+            background: linear-gradient(135deg, #2a7fff, #5aa1ff);
+            color: white;
+            box-shadow: 0 4px 15px rgba(42,127,255,0.3);
+        }
+
+        .step-connector {
+            flex: 1;
+            height: 3px;
+            background: #e8eef5;
+        }
+
+        .step.active ~ .step-connector {
+            background: #2a7fff;
+        }
+
+        .form-section {
+            display: none;
+        }
+
+        .form-section.active {
+            display: block;
+        }
+
+        .form-section h3 {
+            margin-top: 0;
+            margin-bottom: 20px;
+            color: #16324a;
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px solid #f0f0f0;
+        }
+
+        .btn-primary {
+            background: #2a7fff;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            background: #1f5fd9;
+        }
+
+        .btn-secondary {
+            background: #e8e8e8;
+            color: #555;
+            padding: 12px 24px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-secondary:hover {
+            background: #dcdcdc;
+        }
+
+        /* Status Badges */
+        .status-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-done {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-late {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        /* Vaccine List */
+        .vaccine-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            margin-bottom: 8px;
+            background: #f9f9f9;
+            border-radius: 8px;
+            border: 1px solid #e8e8e8;
+        }
+
+        .vaccine-item input[type="checkbox"] {
+            margin: 0 10px 0 0;
+            width: auto;
+        }
+
+        .vaccine-item label {
+            margin: 0;
+            font-weight: 500;
+            flex: 1;
+        }
+
+        .vaccine-note {
+            margin-left: auto;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .vaccine-list {
+            max-height: 300px;
+            overflow-y: auto;
+            padding-right: 8px;
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+
+            .certificate-print, .certificate-print * {
+                visibility: visible;
+            }
+
+            .certificate-print {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                padding: 20px;
+                background: white;
+            }
+
+            #certificate-content {
+                padding: 40px !important;
+                text-align: center !important;
+            }
+
+            .modal-footer {
+                display: none !important;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .stats {
+                flex-direction: column;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .modal-content {
+                padding: 20px;
+            }
+
+            table {
+                font-size: 12px;
+            }
+
+            th, td {
+                padding: 10px 8px;
+            }
+
+            .print-btn, .view-btn {
+                padding: 6px 10px;
+                font-size: 11px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h2>نظام إدارة التطعيمات</h2>
+        <a href="/logout"><i class="fa-solid fa-arrow-right-from-bracket"></i> تسجيل الخروج</a>
+    </header>
+
+    <div class="stats">
+        <div class="card">
+            <h3>التطعيمات المتأخرة</h3>
+            <p>{{ late_count }}</p>
+        </div>
+        <div class="card">
+            <h3>التطعيمات القادمة</h3>
+            <p>{{ upcoming_count }}</p>
+        </div>
+        <div class="card">
+            <h3>إجمالي المرضى</h3>
+            <p>{{ patients|length }}</p>
+        </div>
+    </div>
+
+    <div class="top-buttons">
+        <button class="blue" onclick="openAddModal()">
+            <i class="fa-solid fa-plus"></i> إضافة مريض جديد
+        </button>
+        <button class="gray">بطاقة التعريف</button>
+        <button class="gray">مريض أجنبي</button>
+    </div>
+
+    <input type="text" class="search-box" id="searchBox" placeholder="ابحث عن طريق الاسم أو رقم الهاتف..." />
+
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>الاسم الكامل</th>
+                    <th>تاريخ الميلاد</th>
+                    <th>رقم الهاتف</th>
+                    <th>الموعد القادم</th>
+                    <th>اللقاح القادم</th>
+                    <th>الحالة</th>
+                    <th>الإجراءات</th>
+                </tr>
+            </thead>
+            <tbody id="patients-table">
+                {% if patients %}
+                    {% for patient in patients %}
+                    <tr {% if patient.parent_id %}class="clickable" data-parent-id="{{ patient.parent_id }}"{% endif %}>
+                        <td>{{ patient.fullname }}</td>
+                        <td>{{ patient.birth_date }}</td>
+                        <td>{{ patient.phone or '-' }}</td>
+                        <td>{{ patient.next_date or '-' }}</td>
+                        <td>{{ patient.next_vaccine or '-' }}</td>
+                        <td>
+                            {% if patient.is_late %}
+                                <span class="status-badge status-late">متأخر</span>
+                            {% elif patient.next_date %}
+                                <span class="status-badge status-pending">قادم</span>
+                            {% else %}
+                                <span class="status-badge status-done">مكتمل</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <button class="print-btn" type="button" onclick="event.stopPropagation(); printCertificate('{{ patient.fullname }}', '{{ patient.birth_date }}', '{{ patient.phone or '' }}', '{{ patient.next_vaccine or 'مكتمل' }}', '{{ patient.next_date or '-' }}')">
+                                طباعة
+                            </button>
+                            {% if patient.parent_id %}
+                            <button class="view-btn" type="button" onclick="event.stopPropagation(); viewParentDetails({{ patient.parent_id }})">
+                                عرض
+                            </button>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="7" class="no-data">لا توجد بيانات مرضى</td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Add Patient Modal -->
+    <div id="add-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>إضافة مريض جديد</h2>
+                <button class="close-btn" onclick="closeAddModal()">&times;</button>
+            </div>
+
+            <div class="stepper">
+                <div class="step active" id="step-1">1</div>
+                <div class="step-connector" id="connector-1"></div>
+                <div class="step" id="step-2">2</div>
+                <div class="step-connector" id="connector-2"></div>
+                <div class="step" id="step-3">3</div>
+            </div>
+
+            <form id="add-patient-form" method="POST" action="/add_patient" enctype="multipart/form-data">
+                <!-- Step 1: Parent Info -->
+                <div class="form-section active" id="section-1">
+                    <h3>بيانات الولي</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="pt-fname">الاسم الأول للولي *</label>
+                            <input type="text" id="pt-fname" name="pt-fname" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="pt-lname">اللقب *</label>
+                            <input type="text" id="pt-lname" name="pt-lname" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="p-national-id">رقم التعريف الوطني</label>
+                            <input type="text" id="p-national-id" name="p-national-id">
+                            <small id="national-help" style="color:#999; display:block;">اتركه فارغًا إذا كان الولي أجنبيًا</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="p-phone">رقم الهاتف *</label>
+                            <input type="tel" id="p-phone" name="p-phone" required>
+                        </div>
+                    </div>
+                    <div class="form-group checkbox-group">
+                        <input type="checkbox" id="p-is-foreign" name="p-is-foreign" onchange="toggleForeignParent(this)">
+                        <label for="p-is-foreign" style="margin: 0; font-weight: 500;">الولي أجنبي (لا يتطلب رقم تعريف وطني)</label>
+                    </div>
+                    <div class="form-group">
+                        <label for="p-address">العنوان</label>
+                        <input type="text" id="p-address" name="p-address">
+                    </div>
+                    <div class="form-group checkbox-group">
+                        <input type="checkbox" id="p-family-booklet" name="p-family-booklet">
+                        <label for="p-family-booklet" style="margin: 0; font-weight: 500;">لديه كتاب العائلة</label>
+                    </div>
+                </div>
+
+                <!-- Step 2: Newborn Info -->
+                <div class="form-section" id="section-2">
+                    <h3>بيانات المولود</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="p-first">الاسم الأول *</label>
+                            <input type="text" id="p-first" name="p-first" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="p-last">اللقب</label>
+                            <input type="text" id="p-last" name="p-last">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="p-birth">تاريخ الميلاد *</label>
+                            <input type="date" id="p-birth" name="p-birth" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="p-gender">الجنس *</label>
+                            <select id="p-gender" name="p-gender" required>
+                                <option value="">اختر الجنس</option>
+                                <option value="ذكر">ذكر</option>
+                                <option value="أنثى">أنثى</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="p-birthplace">مكان الميلاد</label>
+                            <input type="text" id="p-birthplace" name="p-birthplace">
+                        </div>
+                        <div class="form-group">
+                            <label for="p-weight">الوزن (كجم)</label>
+                            <input type="number" id="p-weight" name="p-weight" step="0.1">
+                            <div id="weight-status" style="margin-top:8px; font-weight:700; color:#2a7fff;"></div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="maternal-health">حالة الأم</label>
+                        <select id="maternal-health" name="maternal-health">
+                            <option value="جيدة">جيدة</option>
+                            <option value="متوسطة">متوسطة</option>
+                            <option value="مقلقة">مقلقة</option>
+                        </select>
+                    </div>
+                    <div class="form-group checkbox-group">
+                        <input type="checkbox" id="p-emergency" name="p-emergency">
+                        <label for="p-emergency" style="margin: 0; font-weight: 500;">حالة طارئة</label>
+                    </div>
+                    <div class="form-group">
+                        <label for="p-emergency-note">ملاحظات الحالة الطارئة</label>
+                        <textarea id="p-emergency-note" name="p-emergency-note"></textarea>
+                    </div>
+                </div>
+
+                <!-- Step 3: Documents and Vaccines -->
+                <div class="form-section" id="section-3">
+                    <h3>المستندات واللقاحات</h3>
+                    <div class="form-group">
+                        <label for="birth_certificate">شهادة الميلاد (PDF/JPG/PNG)</label>
+                        <input type="file" id="birth_certificate" name="birth_certificate" accept=".pdf,.jpg,.jpeg,.png">
+                    </div>
+                    <div class="form-group">
+                        <label>اللقاحات المتاحة</label>
+                        <div class="vaccine-list">
+                            {% for vaccine in vaccines %}
+                            <div class="vaccine-item">
+                                <input type="checkbox" name="vaccines" value="{{ vaccine[0] }}" id="vaccine-{{ vaccine[0] }}">
+                                <label for="vaccine-{{ vaccine[0] }}" style="margin: 0; flex: 1;">{{ vaccine[1] }}</label>
+                                <div class="vaccine-note">
+                                    تم الإعطاء:
+                                    <input type="checkbox" name="given_{{ vaccine[0] }}" style="width: auto;">
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" id="btn-prev" onclick="prevStep()" style="display: none;">السابق</button>
+                    <button type="button" class="btn-secondary" onclick="closeAddModal()">إلغاء</button>
+                    <button type="button" class="btn-primary" id="btn-next" onclick="nextStep()">التالي</button>
+                    <button type="submit" class="btn-primary" id="btn-submit" style="display: none;">حفظ</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Parent Details Modal -->
+    <div id="parent-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>تفاصيل الولي والأطفال</h2>
+                <button class="close-btn" onclick="closeParentModal()">&times;</button>
+            </div>
+            <div id="parent-modal-body"></div>
+        </div>
+    </div>
+
+    <!-- Certificate Modal -->
+    <div id="certificate-modal" class="modal">
+        <div class="modal-content" style="max-width: 700px;">
+            <div class="modal-header">
+                <h2>شهادة التطعيم</h2>
+                <button class="close-btn" onclick="closeCertificateModal()">&times;</button>
+            </div>
+            <div id="certificate-content" class="certificate-print" style="padding: 40px 20px; text-align: center; line-height: 2;">
+                <h3 style="margin-bottom: 30px; font-size: 2rem;">شـهـادة تـطـعـيـم</h3>
+                <p><strong>الاسم:</strong> <span id="cert-name"></span></p>
+                <p><strong>تاريخ الميلاد:</strong> <span id="cert-birth"></span></p>
+                <p><strong>رقم الهاتف:</strong> <span id="cert-phone"></span></p>
+                <p><strong>اللقاح:</strong> <span id="cert-vaccine"></span></p>
+                <p><strong>الموعد:</strong> <span id="cert-date"></span></p>
+                <div id="qrcode-container" style="margin: 30px 0; display: flex; justify-content: center;">
+                    <div id="qrcode" style="background: white; padding: 10px; border-radius: 8px;"></div>
+                </div>
+                <div style="margin-top: 30px; display: flex; gap: 10px; justify-content: center;">
+                    <button class="btn-primary" type="button" onclick="printNow()">طباعة</button>
+                    <button class="btn-secondary" type="button" onclick="closeCertificateModal()">إغلاق</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentStep = 1;
+
+        // Modal Functions
+        function openAddModal() {
+            document.getElementById('add-modal').classList.add('show');
+            currentStep = 1;
+            updateStepUI();
+        }
+
+        function closeAddModal() {
+            document.getElementById('add-modal').classList.remove('show');
+            document.getElementById('add-patient-form').reset();
+        }
+
+        function nextStep() {
+            if (currentStep < 3) {
+                currentStep++;
+                updateStepUI();
+            } else {
+                document.getElementById('add-patient-form').submit();
+            }
+        }
+
+        function prevStep() {
+            if (currentStep > 1) {
+                currentStep--;
+                updateStepUI();
+            }
+        }
+
+        function updateStepUI() {
+            // Hide all sections and deactivate steps
+            for (let i = 1; i <= 3; i++) {
+                document.getElementById(`section-${i}`).classList.remove('active');
+                document.getElementById(`step-${i}`).classList.remove('active');
+            }
+            // Show current section and activate step
+            document.getElementById(`section-${currentStep}`).classList.add('active');
+            document.getElementById(`step-${currentStep}`).classList.add('active');
+
+            // Update buttons
+            document.getElementById('btn-prev').style.display = currentStep > 1 ? 'block' : 'none';
+            document.getElementById('btn-next').style.display = currentStep < 3 ? 'block' : 'none';
+            document.getElementById('btn-submit').style.display = currentStep === 3 ? 'block' : 'none';
+        }
+
+        function closeParentModal() {
+            document.getElementById('parent-modal').classList.remove('show');
+        }
+
+        function closeCertificateModal() {
+            document.getElementById('certificate-modal').classList.remove('show');
+        }
+
+        // View parent details
+        function viewParentDetails(parentId) {
+            window.location.href = `/parent/${parentId}`;
+        }
+
+        // Print certificate with improved handling and QR code
+        function printCertificate(name, birth, phone, vaccine, date) {
+            document.getElementById('cert-name').textContent = name;
+            document.getElementById('cert-birth').textContent = birth;
+            document.getElementById('cert-phone').textContent = phone || '-';
+            document.getElementById('cert-vaccine').textContent = vaccine;
+            document.getElementById('cert-date').textContent = date;
+            
+            // Generate QR code with certificate information (compact format)
+            const qrcodeContainer = document.getElementById('qrcode');
+            qrcodeContainer.innerHTML = ''; // Clear previous QR code
+            
+            // Use compact format to reduce QR code size
+            const qrData = `${name}|${birth}|${vaccine}|${date}`;
+            new QRCode(qrcodeContainer, {
+                text: qrData,
+                width: 200,
+                height: 200,
+                colorDark: '#000000',
+                colorLight: '#ffffff',
+                correctLevel: QRCode.CorrectLevel.L
+            });
+            
+            document.getElementById('certificate-modal').classList.add('show');
+        }
+
+        function printNow() {
+            setTimeout(() => {
+                window.print();
+            }, 100);
+        }
+
+        // Search functionality
+        document.getElementById('searchBox').addEventListener('keyup', function() {
+            const searchTerm = this.value.toLowerCase();
+            const rows = document.getElementById('patients-table').getElementsByTagName('tr');
+
+            for (let row of rows) {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(searchTerm) ? '' : 'none';
+            }
+        });
+
+        // Close modals when clicking outside
+        document.addEventListener('click', function(event) {
+            const addModal = document.getElementById('add-modal');
+            const parentModal = document.getElementById('parent-modal');
+            const certModal = document.getElementById('certificate-modal');
+
+            if (event.target === addModal) {
+                closeAddModal();
+            }
+            if (event.target === parentModal) {
+                closeParentModal();
+            }
+            if (event.target === certModal) {
+                closeCertificateModal();
+            }
+        });
+
+        // Clickable rows - navigate to parent details
+        document.querySelectorAll('tr.clickable').forEach(row => {
+            row.addEventListener('click', function() {
+                const parentId = this.dataset.parentId;
+                if (parentId) {
+                    viewParentDetails(parentId);
+                }
+            });
+        });
+
+        // Toggle foreign parent: when checked, national id not required
+        function toggleForeignParent(checkbox) {
+            const nid = document.getElementById('p-national-id');
+            const help = document.getElementById('national-help');
+            if (checkbox.checked) {
+                nid.removeAttribute('required');
+                nid.value = '';
+                help.textContent = 'الولي أجنبي - رقم التعريف غير مطلوب';
+            } else {
+                nid.setAttribute('required', 'required');
+                help.textContent = 'اتركه فارغًا إذا كان الولي أجنبيًا';
+            }
+        }
+
+        // Weight status: show طبيعي if >=2, غير طبيعي if <2
+        const weightInput = document.getElementById('p-weight');
+        if (weightInput) {
+            const statusEl = document.getElementById('weight-status');
+            function updateWeightStatus() {
+                const val = parseFloat(weightInput.value);
+                if (!isNaN(val)) {
+                    if (val >= 2) {
+                        statusEl.textContent = 'طبيعي';
+                        statusEl.style.color = '#4caf50';
+                    } else {
+                        statusEl.textContent = 'غير طبيعي';
+                        statusEl.style.color = '#f44336';
+                    }
+                } else {
+                    statusEl.textContent = '';
+                }
+            }
+            weightInput.addEventListener('input', updateWeightStatus);
+            // initialize
+            updateWeightStatus();
+        }
+    </script>
+</body>
+
+</html>

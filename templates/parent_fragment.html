@@ -1,0 +1,60 @@
+<div class="parent-fragment">
+    <section class="card">
+        <h3>بيانات الولي</h3>
+        <p><strong>معرّف السجل:</strong> {{ parent.id }}</p>
+        <p><strong>الرقم الوطني / رمز:</strong> {{ parent.national_id }}</p>
+        <p><strong>الهاتف:</strong> {{ parent.phone }}</p>
+        <p><strong>العنوان:</strong> {{ parent.address }}</p>
+    </section>
+
+    <section class="children-section">
+        <h3>الأبناء</h3>
+        {% if children %}
+            {% for child in children %}
+                <div class="card child-card">
+                    <h4>{{ child.fullname }} <small>({{ child.gender }})</small></h4>
+                    <p><strong>تاريخ الميلاد:</strong> {{ child.birth_date }}</p>
+                    <p><strong>الوزن (كجم):</strong> {{ child.weight_kg or '-' }}</p>
+
+                    <h5>جداول التلقيح</h5>
+                    {% if vaccines[child.id] %}
+                    <table class="child-vaccines">
+                        <thead>
+                            <tr>
+                                <th>اللقاح</th>
+                                <th>الموعد</th>
+                                <th>الحالة</th>
+                                <th>الإجراء</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for group in vaccines[child.id] %}
+                            <tr id="group-row-{{ loop.index0 }}-{{ child.id }}">
+                                <td title="{{ group.names }}">{{ group.names }}</td>
+                                <td>{{ group.scheduled_date if group.scheduled_date else 'الآن' }}</td>
+                                <td id="group-status-{{ loop.index0 }}-{{ child.id }}">{{ group.status }}</td>
+                                <td>
+                                    {% if group.status != 'مؤكد' %}
+                                    <button class="blue confirm-group-btn" type="button" data-pv-ids="{{ group.pv_ids|join(',') }}" data-child-id="{{ child.id }}" data-group-index="{{ loop.index0 }}">تأكيد جميعها</button>
+                                    {% else %}
+                                    <button class="gray unconfirm-group-btn" type="button" data-pv-ids="{{ group.pv_ids|join(',') }}" data-child-id="{{ child.id }}" data-group-index="{{ loop.index0 }}">إلغاء التأكيد</button>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% else %}
+                        <p>لا توجد سجلات للقاحات لهذا الطفل.</p>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        {% else %}
+            <p>لا يوجد أبناء مرتبطين بهذا الولي.</p>
+        {% endif %}
+    </section>
+
+    <div class="modal-fragment-actions">
+        <button class="gray" type="button" onclick="closeParentModal()">إغلاق</button>
+    </div>
+</div>

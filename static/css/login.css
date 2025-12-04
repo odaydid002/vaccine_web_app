@@ -1,0 +1,188 @@
+/* Background Gradient */
+body {
+    margin: 0;
+    font-family: "Tajawal", sans-serif;
+    background: linear-gradient(135deg, #f7d8e2, #cbe0ff, #c5f3e6);
+    background-size: 200% 200%;
+    animation: gradientMove 10s ease infinite;
+}
+
+@keyframes gradientMove {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+.container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+}
+
+.h4pc{
+    display: none;
+}
+
+.card {
+    width: 900px;
+    display: flex;
+    background: white;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+}
+
+/* Arabic Form Section */
+.left {
+    width: 50%;
+    padding: 40px;
+}
+
+h2 { margin: 0; color: #333;}
+
+.sub {
+    margin-top: 6px;
+    color: #555;
+    font-size: 15px;
+}
+
+form { margin-top: 20px; }
+
+label {
+    display: block;
+    margin: 10px 0 5px;
+    font-weight: 600;
+    color: #333;
+    opacity: 0.8;
+}
+
+input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 15px;
+}
+
+input::placeholder{
+    font-size: 0.8rem;
+}
+
+.eye {
+    position: absolute;
+    left: 12px; 
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    font-size: 18px;
+}
+
+.continue-btn {
+    width: 100%;
+    padding: 12px;
+    margin-top: 20px;
+    background: #0077ff;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.continue-btn:hover {
+    background: #005fcc;
+}
+
+.right {
+    width: 50%;
+    background: rgba(255,255,255,0.6);
+    padding: 40px;
+    position: relative;
+}
+
+.quote {
+    font-size: 16px;
+    line-height: 1.7;
+    color: #333;
+}
+
+.profile {
+    display: flex;
+    align-items: center;
+    margin-top: 20px;
+}
+
+.profile img {
+    width: 55px;
+    height: 55px;
+    border-radius: 50%;
+    margin-left: 12px;
+}
+
+.profile2{
+    position: absolute;
+    display: none;
+    align-items: center;
+    top: 1em;
+    right: 1em;
+    font-size: 0.8rem;
+}
+
+.profile2 .role{
+    font-size: 0.6rem;
+}
+
+
+.profile2 img{
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    margin-left: 12px;
+}
+
+.role {
+    color: gray;
+    font-size: 14px;
+}
+
+.break-line{
+    height: 1px;
+    width: 60%;
+    background-color: rgba(0, 0, 0, 0.1);
+    margin: 1em 0;
+    align-self: center;
+}
+
+.frame{
+    height: auto;
+    width: 80%;
+    align-self: center;
+}
+
+@media (max-width: 800px) {
+    .card{
+        width: 100vw;
+        height: 100vh;
+        border-radius: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+    .left{
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 1em;
+    }
+    .right{
+        display: none;
+    }
+    .h4pc{
+        display: flex;
+    }
+}
