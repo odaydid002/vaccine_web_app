@@ -672,7 +672,10 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label for="p-national-id">رقم التعريف الوطني</label>
-                            <input type="text" id="p-national-id" name="p-national-id">
+                            <div style="display:flex; gap:8px; align-items:center">
+                                <input type="text" id="p-national-id" name="p-national-id" style="flex:1">
+                                <button type="button" id="generate-id-btn" class="gray" style="display:none; padding:8px 10px;">توليد رقم</button>
+                            </div>
                             <small id="national-help" style="color:#999; display:block;">اتركه فارغًا إذا كان الولي أجنبيًا</small>
                         </div>
                         <div class="form-group">
@@ -684,7 +687,7 @@
                         <div class="form-group">
                             <label for="p-passport">رقم جواز السفر (للأجانب)</label>
                             <input type="text" id="p-passport" name="p-passport" disabled>
-                            <small id="passport-help" style="color:#999; display:block;">يتم تفعيله عند تحديد الولي كأجنبي</small>
+                            <small id="passport-help" style="color:#999; display:block;">اختياري الآن - اتركه إن أردت</small>
                         </div>
                     </div>
                     <div class="form-group checkbox-group">
@@ -843,10 +846,15 @@
         }
 
         function nextStep() {
+            // validate current step before moving forward or submitting
+            if (!validateStep(currentStep)) return;
+
             if (currentStep < 3) {
                 currentStep++;
                 updateStepUI();
             } else {
+                // final validation before submit
+                if (!validateStep(3)) return;
                 document.getElementById('add-patient-form').submit();
             }
         }
@@ -872,6 +880,64 @@
             document.getElementById('btn-prev').style.display = currentStep > 1 ? 'block' : 'none';
             document.getElementById('btn-next').style.display = currentStep < 3 ? 'block' : 'none';
             document.getElementById('btn-submit').style.display = currentStep === 3 ? 'block' : 'none';
+        }
+
+        // Validation per step
+        function validateStep(step) {
+            // Step 1: parent info
+            if (step === 1) {
+                const fname = document.getElementById('pt-fname').value.trim();
+                const lname = document.getElementById('pt-lname').value.trim();
+                const phone = document.getElementById('p-phone').value.trim();
+                const isForeign = document.getElementById('p-is-foreign').checked;
+                const nid = document.getElementById('p-national-id').value.trim();
+                const passport = document.getElementById('p-passport').value.trim();
+
+                if (!fname) { alert('الرجاء إدخال الاسم الأول للولي.'); return false; }
+                if (!lname) { alert('الرجاء إدخال اللقب للولي.'); return false; }
+                if (!phone) { alert('الرجاء إدخال رقم الهاتف.'); return false; }
+
+                // national id validation for locals
+                if (!isForeign) {
+                    if (!nid) { alert('الرجاء إدخال رقم التعريف الوطني أو تفعيل خيار الأجنبي.'); return false; }
+                    if (!/^\d{18}$/.test(nid)) { alert('رقم التعريف الوطني يجب أن يكون مكوناً من 18 رقماً.'); return false; }
+                } else {
+                    // For foreign parents: if national id empty, auto-generate one to proceed
+                    if (!nid) {
+                        generateRandomNationalId();
+                    }
+                    // passport is optional now
+                }
+            }
+
+            // Step 2: newborn info
+            if (step === 2) {
+                const pfirst = document.getElementById('p-first').value.trim();
+                const pbirth = document.getElementById('p-birth').value.trim();
+                const pgender = document.getElementById('p-gender').value;
+                const weightVal = document.getElementById('p-weight').value.trim();
+
+                if (!pfirst) { alert('الرجاء إدخال اسم المولود الأول.'); return false; }
+                if (!pbirth) { alert('الرجاء إدخال تاريخ الميلاد.'); return false; }
+                if (!pgender) { alert('الرجاء اختيار جنس المولود.'); return false; }
+
+                if (weightVal) {
+                    const w = parseFloat(weightVal);
+                    if (isNaN(w) || w <= 0) { alert('وزن المولود غير صالح. الرجاء إدخال قيمة رقمية موجبة.'); return false; }
+                }
+            }
+
+            // Step 3: optional checks (no required fields besides file type)
+            if (step === 3) {
+                const birthCert = document.getElementById('birth_certificate').value;
+                if (birthCert) {
+                    const allowed = ['.pdf', '.jpg', '.jpeg', '.png'];
+                    const lower = birthCert.toLowerCase();
+                    if (!allowed.some(ext => lower.endsWith(ext))) { alert('نوع ملف شهادة الميلاد غير مدعوم. استخدم PDF/JPG/PNG.'); return false; }
+                }
+            }
+
+            return true;
         }
 
         function closeParentModal() {
@@ -963,27 +1029,62 @@
             const passport = document.getElementById('p-passport');
             const help = document.getElementById('national-help');
             const passportHelp = document.getElementById('passport-help');
-            
+            const genBtn = document.getElementById('generate-id-btn');
+
             if (checkbox.checked) {
+                // For foreign parents: allow national id but offer generation button
+                nid.disabled = false;
                 nid.removeAttribute('required');
-                nid.value = '';
-                nid.disabled = true;
-                help.textContent = 'الولي أجنبي - رقم التعريف غير مطلوب';
-                
+                help.textContent = 'الولي أجنبي - يمكنك توليد رقم تعريف أو إدخاله يدوياً';
+
                 passport.disabled = false;
-                passport.setAttribute('required', 'required');
-                passportHelp.textContent = 'رقم جواز السفر مطلوب للأجانب';
+                passport.removeAttribute('required');
+                passportHelp.textContent = 'اختياري الآن - اتركه إن أردت';
+
+                genBtn.style.display = 'inline-block';
             } else {
+                // For locals: national id required, passport disabled
                 nid.disabled = false;
                 nid.setAttribute('required', 'required');
                 help.textContent = 'اتركه فارغًا إذا كان الولي أجنبيًا';
-                
+
                 passport.disabled = true;
                 passport.removeAttribute('required');
                 passport.value = '';
                 passportHelp.textContent = 'يتم تفعيله عند تحديد الولي كأجنبي';
+
+                genBtn.style.display = 'none';
             }
         }
+
+        // Generate a random 18-digit national id and fill the field
+        function generateRandomNationalId() {
+            // prefix: YYYYMMDDhhmm (12 digits)
+            const now = new Date();
+            const pad = (n, len = 2) => n.toString().padStart(len, '0');
+            const year = now.getFullYear();
+            const month = pad(now.getMonth() + 1);
+            const day = pad(now.getDate());
+            const hour = pad(now.getHours());
+            const minute = pad(now.getMinutes());
+            const prefix = `${year}${month}${day}${hour}${minute}`; // 12 digits
+
+            // suffix: 6 random digits
+            let suffix = '';
+            for (let i = 0; i < 6; i++) {
+                suffix += Math.floor(Math.random() * 10);
+            }
+
+            const id = prefix + suffix; // total 18 digits
+            document.getElementById('p-national-id').value = id;
+            return id;
+        }
+
+        // attach click handler for generate button
+        document.addEventListener('DOMContentLoaded', function() {
+            const gen = document.getElementById('generate-id-btn');
+            if (gen) gen.addEventListener('click', generateRandomNationalId);
+        });
 
         // Weight status: show طبيعي if >=2, غير طبيعي if <2
         const weightInput = document.getElementById('p-weight');

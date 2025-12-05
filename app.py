@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, session, jsonify
+from flask import Flask, render_template, request, redirect, session, jsonify, make_response
 from datetime import datetime, timedelta
 import bcrypt
 import psycopg2
@@ -13,7 +13,7 @@ app = Flask(__name__)
 conn = psycopg2.connect(
     dbname="vaccweb",
     user="postgres",
-    password="Paradox",
+    password="20020429",
     host="localhost",
     port="5432"
 )
@@ -1051,6 +1051,48 @@ def add_patient():
         passport = passport.strip()
         if passport == '':
             passport = None
+
+    # ------------------ Server-side validation ------------------
+    errors = []
+    # Parent required fields
+    if not fname or not fname.strip():
+        errors.append('الاسم الأول للولي مطلوب')
+    if not lname or not lname.strip():
+        errors.append('اللقب للولي مطلوب')
+    if not phone or not phone.strip():
+        errors.append('رقم الهاتف للولي مطلوب')
+
+    # National ID / passport validation
+    if not is_foreign:
+        if not nationalId:
+            errors.append('رقم التعريف الوطني مطلوب للمواليد المحليين')
+        else:
+            if not nationalId.isdigit() or len(nationalId) != 18:
+                errors.append('رقم التعريف الوطني يجب أن يتكون من 18 رقمًا')
+    else:
+        # foreign parent: passport is optional; national id may be generated client-side
+        pass
+
+    # Newborn validations
+    if not p_first or not p_first.strip():
+        errors.append('اسم المولود مطلوب')
+    if not birth or not birth.strip():
+        errors.append('تاريخ ميلاد المولود مطلوب')
+    if not gender:
+        errors.append('جنس المولود مطلوب')
+
+    # weight numeric check
+    if request.form.get('p-weight'):
+        try:
+            w = float(request.form.get('p-weight'))
+            if w <= 0:
+                errors.append('وزن المولود يجب أن يكون قيمة موجبة')
+        except Exception:
+            errors.append('وزن المولود غير صالح')
+
+    if errors:
+        # return bad request with joined errors
+        return make_response('\n'.join(errors), 400)
 
     with conn.cursor() as cur:
 
